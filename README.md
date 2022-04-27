@@ -16,3 +16,20 @@
 六边形网格地形是由代码动态生成的（向 UV 集加点），因此没有地形文件。
 ```
 
+将 `replay.bin` 放到 `Assets/WebGLTemplates/Template/` 目录下，启动后在浏览器控制台输入指令：
+
+```javascript
+fetch("replay.bin").then((r) => r.blob()).then((r) => postMessage({message:"init_replay_player", replay_data: r}))
+```
+
+测试选手名称的参考代码如下所示：
+
+```javascript
+postMessage({message:"load_players", "players": ["A", "B"]})
+```
+
+测试在线模式的参考代码如下所示：
+
+```javascript
+postMessage({message:"init_player_player", "token": token})
+```

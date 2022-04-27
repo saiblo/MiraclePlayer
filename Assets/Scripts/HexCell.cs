@@ -83,7 +83,7 @@ public struct HexCoordinates
         writer.Write(x);
         writer.Write(z);
     }
-    public static HexCoordinates Load(BinaryReader reader)
+    public static HexCoordinates Load(HexGrid.MapReader reader)
     {
         HexCoordinates c;
         c.x = reader.ReadInt32();
@@ -497,7 +497,7 @@ public class HexCell : MonoBehaviour
             writer.Write((byte)0);
         }
     }
-    public void Load(BinaryReader reader)
+    public void Load(HexGrid.MapReader reader)
     {
         terrainTypeIndex = reader.ReadByte();
         elevation = reader.ReadByte();

@@ -1621,7 +1621,7 @@ public class HexGrid : MonoBehaviour
             units[i].Save(writer);
         }
     }
-    public void Load(BinaryReader reader, int header)
+    public void Load(MapReader reader, int header)
     {
         ClearHighlight();
         ClearPath();
@@ -1659,23 +1659,57 @@ public class HexGrid : MonoBehaviour
         return path;
     }
 
+    public class MapReader
+    {
+        private int _pos;
+        private readonly string _name;
+
+        public MapReader(string name)
+        {
+            _name = name;
+        }
+
+        public int ReadInt32()
+        {
+            var data = new byte[4];
+            data[0] = GameUI.GetMapByte(_name, _pos + 0);
+            data[1] = GameUI.GetMapByte(_name, _pos + 1);
+            data[2] = GameUI.GetMapByte(_name, _pos + 2);
+            data[3] = GameUI.GetMapByte(_name, _pos + 3);
+            _pos += 4;
+            return BitConverter.ToInt32(data, 0);
+        }
+
+        public float ReadSingle()
+        {
+            var data = new byte[4];
+            data[0] = GameUI.GetMapByte(_name, _pos + 0);
+            data[1] = GameUI.GetMapByte(_name, _pos + 1);
+            data[2] = GameUI.GetMapByte(_name, _pos + 2);
+            data[3] = GameUI.GetMapByte(_name, _pos + 3);
+            _pos += 4;
+            return BitConverter.ToSingle(data, 0);
+        }
+
+        public byte ReadByte()
+        {
+            return GameUI.GetMapByte(_name, _pos++);
+        }
+
+        public bool ReadBoolean()
+        {
+            return GameUI.GetMapByte(_name, _pos++) != 0;
+        }
+    }
+
     // 智能体：启动时即构建地图！
     public void LoadMap()
     {
-        string path = Path.Combine(Application.streamingAssetsPath, mapname + ".map");
-        if (!File.Exists(path)) {
-            Debug.LogError("File does not exist " + path);
-            return;
+        var reader = new MapReader(mapname);
+        var header = reader.ReadInt32();
+        if (header <= 2) {
+            Load(reader, header);
         }
-        using (
-            BinaryReader reader =
-                new BinaryReader(File.OpenRead(path))
-        ) {
-            int header = reader.ReadInt32();
-            if (header <= 2) {
-                Load(reader, header);
-            }
-            else Debug.LogWarning("Unknown map format" + header);
-        }
+        else Debug.LogWarning("Unknown map format" + header);
     }
 }

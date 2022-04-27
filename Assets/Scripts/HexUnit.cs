@@ -1042,7 +1042,7 @@ public class HexUnit : MonoBehaviour
         writer.Write(orientation);
     }
 
-    public static void Load(BinaryReader reader, HexGrid grid)
+    public static void Load(HexGrid.MapReader reader, HexGrid grid)
     {
         int type = reader.ReadByte();
         HexCoordinates coordinates = HexCoordinates.Load(reader);

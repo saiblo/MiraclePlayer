@@ -6,9 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Plugins/Excelsior/CSFHI/Scenes/CSFHI_Showroom.unity
-    guid: 7dfb3ce2692d7b444b2bb8be75989074
-  - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 0
+    path: Assets/Plugins/Excelsior/CSFHI/Scenes/CSFHI_Showroom.unity
+    guid: 7dfb3ce2692d7b444b2bb8be75989074
   m_configObjects: {}

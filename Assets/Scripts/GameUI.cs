@@ -1,13 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.IO;
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
-using LitJson;
-// using DG.Tweening;
 
 public enum CommandType
 {
@@ -49,31 +47,6 @@ public class Command
     public override string ToString()
     {
         return "Round " + round.ToString() + ", " + type;
-    }
-}
-
-class BinaryReader2 : BinaryReader // 支持读取大尾端
-{
-    public BinaryReader2(Stream stream) : base(stream) { }
-
-    public int ReadInt32(bool little)
-    {
-        if (little) { return base.ReadInt32(); }
-        else {
-            var data = base.ReadBytes(4);
-            Array.Reverse(data);
-            return BitConverter.ToInt32(data, 0);
-        }
-    }
-
-    public short ReadInt16(bool little)
-    {
-        if (little) { return base.ReadInt16(); }
-        else {
-            var data = base.ReadBytes(2);
-            Array.Reverse(data);
-            return BitConverter.ToInt16(data, 0);
-        }
     }
 }
 
@@ -188,7 +161,7 @@ public class GameUI : MonoBehaviour
     public int myCamp; // 决定阵营。蓝方0、红方1
 
     // 离线模式
-    string recordPath;
+    int replayLength;
     public GameObject OFFLINEPanel;
     public Button BtnPlay, BtnPause, BtnStop, BtnSwap;
     public GameObject SUBOFFLINEPanel;
@@ -224,19 +197,44 @@ public class GameUI : MonoBehaviour
     public GameObject PanelSelect;
     public Text selectedUnitText;
 
+    // JS层通信接口
+    [DllImport("__Internal")]
+    private static extern int GetReplayLength();
+
+    [DllImport("__Internal")]
+    private static extern int GetReplayData(int index);
+
+    [DllImport("__Internal")]
+    public static extern byte GetMapByte(string name, int index);
+
+    [DllImport("__Internal")]
+    private static extern string GetToken();
+
+    [DllImport("__Internal")]
+    private static extern void ConnectSaiblo(string tokenDecoded, string tokenEncoded);
+
+    [DllImport("__Internal")]
+    public static extern void SendWsMessage(string message);
+
+    [DllImport("__Internal")]
+    private static extern string GetPlayers();
+
+    [DllImport("__Internal")]
+    public static extern void JsAlert(string message);
+
 
     private void Awake()
     {
         terrainMaterial.EnableKeyword("GRID_ON");
 
-        gameMode = PlayerPrefs.GetString("bool") == "0" ? 0 : 1;
+        replayLength = GetReplayLength();
+        gameMode = replayLength > 0 ? 0 : 1;
         if (gameMode == 0) {
-            recordPath = PlayerPrefs.GetString("path");
             MsgCanvasMask.SetActive(true);
             LoadCommands();
         }
         else if (gameMode == 1) {
-            onlineToken = PlayerPrefs.GetString("token");
+            onlineToken = GetToken();
             HexMapCamera.Locked = true;
             enabled = false;
             grid.enabled = false;
@@ -939,43 +937,34 @@ public class GameUI : MonoBehaviour
     public void LoadCommands()
     {
         grid.commands.Clear();
-        // string path = "E:/Tsinghua/AC/record(3)";
-        if (!File.Exists(recordPath)) {
-            socketClient.popMsgBox("File does not exist " + recordPath, 0);
-            Debug.LogError("File does not exist " + recordPath);
-            return;
-        }
 
-        using (BinaryReader2 reader = new BinaryReader2(File.OpenRead(recordPath))) {
-            /*int header = reader.ReadInt32(false);
-            if (header != 0) Debug.LogError("file error!");*/
-            try {
-                int curComInx = 0;
-                while (true) { // 不停地读入命令数据
-                    int round = reader.ReadInt32(false);
-                    if (round == -1) {
-                        Debug.Log("reading file success: " + recordPath);
-                        Debug.Log("commands total count: " + grid.commands.Count.ToString());
-                        break;
-                    }
-                    Debug.Log("curComInx = " + curComInx.ToString());
-                    Debug.Log("round = " + round);
-                    CommandType command = (CommandType)reader.ReadInt32(false);
-                    Debug.Log("command = " + command);
-                    int[] arg = new int[argNum];
-                    for (int i = 0; i < argNum; i++) {
-                        arg[i] = reader.ReadInt32(false);
-                        Debug.Log("arg[" + i + "] = " + arg[i]);
-                    }
-                    grid.commands.Add(new Command(round, command, arg));
-                    curComInx += 1;
+        int actualReplayLength = replayLength - replayLength % 7;
+        try {
+            int curComInx = 0;
+            for (var index = 0; index < actualReplayLength; ) { // 不停地读入命令数据
+                int round = GetReplayData(index++);
+                if (round == -1) {
+                    Debug.Log("reading file success.");
+                    Debug.Log("commands total count: " + grid.commands.Count.ToString());
+                    break;
                 }
+                Debug.Log("curComInx = " + curComInx.ToString());
+                Debug.Log("round = " + round);
+                CommandType command = (CommandType)GetReplayData(index++);
+                Debug.Log("command = " + command);
+                int[] arg = new int[argNum];
+                for (int i = 0; i < argNum; i++) {
+                    arg[i] = GetReplayData(index++);
+                    Debug.Log("arg[" + i + "] = " + arg[i]);
+                }
+                grid.commands.Add(new Command(round, command, arg));
+                curComInx += 1;
             }
-            catch (Exception e) {
-                socketClient.popMsgBox("replay file error!", 0);
-                Debug.LogError(e);
-                return;
-            }
+        }
+        catch (Exception e) {
+            socketClient.popMsgBox("replay file error!", 0);
+            Debug.LogError(e);
+            return;
         }
 
         try {
