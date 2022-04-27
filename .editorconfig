@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# CS0642: 空语句可能有错误
+dotnet_diagnostic.CS0642.severity = silent
