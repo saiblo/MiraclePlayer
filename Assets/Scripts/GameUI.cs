@@ -211,7 +211,7 @@ public class GameUI : MonoBehaviour
     private static extern string GetToken();
 
     [DllImport("__Internal")]
-    private static extern void ConnectSaiblo(string tokenDecoded, string tokenEncoded);
+    public static extern void ConnectSaiblo(string tokenDecoded, string tokenEncoded);
 
     [DllImport("__Internal")]
     public static extern void SendWsMessage(string message);
@@ -987,7 +987,7 @@ public class GameUI : MonoBehaviour
     public void sendCommand(Command C)
     {
         string msg = socketClient.CommandToMsg(C);
-        socketClient.Send(msg);
+        SendWsMessage(msg);
     }
 
     // 初始化全局环境变量

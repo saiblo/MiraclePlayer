@@ -201,7 +201,7 @@
         websocket.onmessage = function (event) {
           const data = JSON.parse(event.data)
           if (data.request === "action") {
-            window.MyGameInstance.SendMessage("EventSystem", "OnWsMessage", data.content);
+            window.MyGameInstance.SendMessage("socket", "ReceiveFormServer", data.content);
           }
         };
       }
